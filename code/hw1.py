@@ -13,29 +13,21 @@ def read_data():
 
 
 def stats(df):
+    counter = 0
     for (columnName, columnData) in df.iteritems():
+        counter += 1
         mean = round(np.mean(columnData.values), 2)
         min = round(np.min(columnData.values), 2)
         max = round(np.max(columnData.values), 2)
         quart_25 = round(np.quantile(columnData.values, 0.25), 2)
         quart_50 = round(np.quantile(columnData.values, 0.5), 2)
         quart_75 = round(np.quantile(columnData.values, 0.75), 2)
-        print(
-            "Column Name :",
-            columnName,
-            "\n Mean:",
-            mean,
-            " Max:",
-            max,
-            " Min:",
-            min,
-            "\n Quartiles:: 25%:",
-            quart_25,
-            " 50%:",
-            quart_50,
-            " 75%:",
-            quart_75,
-        )
+        print(f"{counter}. Column Name : {columnName}")
+        print(f"    Mean: {mean}")
+        print(f"    Min: {min}")
+        print(f"    Max: {max}")
+        print(f"    Quartiles:: 25%: {quart_25}, 50%: {quart_50}, 75%: {quart_75}")
+    return
 
 
 def visuals(df):
@@ -56,10 +48,10 @@ def visuals(df):
 
 def main():
     df = read_data()
-    X_orig = df.iloc[:, :3]
+    X_orig = df.iloc[:, :4]
     # df.iloc[:, -1:]
     stats(X_orig)
-    visuals(df)
+    # visuals(df)
 
 
 if __name__ == "__main__":
