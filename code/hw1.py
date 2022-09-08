@@ -3,10 +3,13 @@ import sys
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import sklearn
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 
 
@@ -121,50 +124,95 @@ def transform_data(df):
     return X_train
 
 
-def model_training(model_name, model, X, y):
-    """Trains machine learning models and calculates accuracy, precision and recall"""
+def model_training(X_train, X_test, y_train, y_test):
+    """Calls model_training function for training models and return the stats"""
 
-    # Fit Model on data
-    model.fit(X, y)
+    print_heading("Model Training")
+    # Create a dictionary with model names and classifiers
+    models = {
+        "decision_tree": {"model": DecisionTreeClassifier()},
+        "knn": {"model": KNeighborsClassifier()},
+        "svm": {"model": LinearSVC()},
+        "random_forest": {"model": RandomForestClassifier()},
+        "ada_boost": {"model": AdaBoostClassifier()},
+    }
 
-    # Predict the label using model
-    prediction = model.predict(X)
-    # Calculate accuracy of model
-    accuracy = sklearn.metrics.accuracy_score(y, prediction)
-    # Calculate precision of model
-    precision = sklearn.metrics.precision_score(prediction, y, average="micro")
-    # Calculate recall of model
-    recall = sklearn.metrics.recall_score(prediction, y, average="micro")
+    # Look through all models and store all details in a list
+    scores = []
 
-    # Print summary of model
-    print_heading(f"Model Predictions for {model_name}")
-    print(f"{model_name} Accuracy:: Random Forest:", accuracy)
-    print(f"{model_name} Precision:: Random Forest:", precision)
-    print(f"{model_name} Recall:: Random Forest:", recall)
+    for model_name, model_clf in models.items():
+        # Fit Model on data
+        model = model_clf["model"]
+        model.fit(X_train, y_train)
+        # Predict the label using model
+        prediction = model.predict(X_test)
+        # Calculate accuracy of model
+        accuracy = accuracy_score(y_test, prediction)
+        # Calculate precision of model
+        precision = precision_score(prediction, y_test, average="micro")
+        # Calculate recall of model
+        recall = recall_score(prediction, y_test, average="micro")
+        stats = {
+            "model_name": model_name,
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+        }
+        scores.append(stats)
 
+    # Use the list to create dataframe and return the results
+    model_scores = pd.DataFrame(scores)
+    print(model_scores)
     return
 
 
-def model_pipeline(X, y):
-    """Trains Random Forest Classifier using Pipeline"""
+def model_pipeline(X_train, X_test, y_train, y_test):
+    """Trains Classifiers using Pipeline"""
 
-    print_heading("Model via Pipeline Predictions")
-    # Create Pipeline
-    pipeline = Pipeline(
-        [
-            ("StandardScaler", StandardScaler()),
-            ("RandomForest", RandomForestClassifier(random_state=1234)),
-        ]
-    )
+    print_heading("Models via Pipeline Predictions")
 
-    # Fit on data using the pipeline
-    pipeline.fit(X, y)
+    # Create a dictionary with model names and pipelines
+    pipelines = {
+        "decision_tree": {
+            "pipeline": Pipeline(
+                [
+                    ("StandardScaler", StandardScaler()),
+                    ("DecisionTree", DecisionTreeClassifier(random_state=1234)),
+                ],
+            )
+        },
+        "knn": {
+            "pipeline": Pipeline(
+                [
+                    ("StandardScaler", StandardScaler()),
+                    ("KNeighbors", KNeighborsClassifier()),
+                ],
+            )
+        },
+        "random_forest": {
+            "pipeline": Pipeline(
+                [
+                    ("StandardScaler", StandardScaler()),
+                    ("RandomForest", RandomForestClassifier(random_state=1234)),
+                ],
+            )
+        },
+    }
 
-    # Calculate probability and prediction for model using pipeline
-    probability = pipeline.predict_proba(X)
-    prediction = pipeline.predict(X)
-    print(f"Probability: {probability}")
-    print(f"Predictions: {prediction}")
+    # Loop through all models and use pipelines to build models
+    for model_name, model_pipe in pipelines.items():
+        print_heading(f"Pipeline for {model_name}")
+        pipeline = model_pipe["pipeline"]
+        # Fit on data using the pipeline
+        pipeline.fit(X_train, y_train)
+        # Calculate probability and prediction for model using pipeline
+        probability = pipeline.predict_proba(X_test)
+        prediction = pipeline.predict(X_test)
+        score = accuracy_score(y_test, prediction)
+        print(f"Probability: {probability}")
+        print(f"Predictions: {prediction}")
+        print(f"Score: {score}")
+
     return
 
 
@@ -172,22 +220,23 @@ def main():
     df = read_data()  # Read data and load it
 
     X_orig = df.iloc[:, :4]  # Load first four columns (Predictors) in X
-    y = df.iloc[:, -1:].values.ravel()  # Load last column (Predictand) in y
+    y_orig = df.iloc[:, -1:].values.ravel()  # Load last column (Predictand) in y
 
     stats(X_orig)  # Generate statistics for Predictors
     visuals(df)  # Plot visuals for different classes for EDA
-    X_train = transform_data(X_orig)  # Transform data
 
-    # Load classifiers
-    random_forest = RandomForestClassifier(random_state=1234)
-    decision_tree = DecisionTreeClassifier()
-    # Train model for random forest
-    model_training("Random Forest", random_forest, X_train, y)
-    # Train model for decision tree
-    model_training("Decision Tree", decision_tree, X_train, y)
+    X = transform_data(X_orig)  # Transform data
 
-    # Train random forest model using pipeline
-    model_pipeline(X_train, y)
+    # Test-Train split on data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y_orig, test_size=0.2, random_state=1234
+    )
+
+    # Train machine learning models
+    model_training(X_train, X_test, y_train, y_test)
+
+    # Train models using pipeline
+    model_pipeline(X_train, X_test, y_train, y_test)
 
     print_heading("PROGRAM EXECUTED SUCCESSFULLY")
 
