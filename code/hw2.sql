@@ -1,3 +1,6 @@
+-- Use baseball database
+USE baseball;
+
 -- Check if table exists
 DROP TABLE IF EXISTS batter_data;
 -- Creating temporary table to get batter stats
@@ -17,7 +20,7 @@ DROP TABLE IF EXISTS batter_hist_avg;
 CREATE TABLE batter_hist_avg
     SELECT
         batter,
-        IF(atbat = 0, 0, SUM(hit) / SUM(atbat)) AS b_avg_hist
+        IF(SUM(atbat) = 0, 0, SUM(hit) / SUM(atbat)) AS b_avg_hist
     FROM batter_data
     GROUP BY batter
     ORDER BY batter;
@@ -29,7 +32,7 @@ CREATE TABLE batter_annual_avg
     SELECT
         batter,
         YEAR(game_date) AS year,
-        IF(atbat = 0, 0, SUM(hit) / SUM(atbat)) AS b_avg_annual
+        IF(SUM(atbat) = 0, 0, SUM(hit) / SUM(atbat)) AS b_avg_annual
     FROM batter_data
     GROUP BY batter, year
     ORDER BY batter, year;
@@ -55,7 +58,7 @@ CREATE TABLE batter_rolling_avg
 	SELECT
 		bdg1.batter,
 		bdg1.game_date,
-		IF(bdg2.atbat = 0, 0, SUM(bdg2.Hit) / SUM(bdg2.atbat)) AS b_rolling_avg
+		IF(SUM(bdg2.atbat) = 0, 0, SUM(bdg2.Hit) / SUM(bdg2.atbat)) AS b_rolling_avg
 	FROM batterData_byGameDate AS bdg1
 	JOIN batterData_byGameDate AS bdg2
 	ON bdg1.batter = bdg2.batter
