@@ -1,5 +1,7 @@
 numpy
 pandas
 plotly
+pyspark
+pyspark-stubs
 scikit-learn
 sklearn
