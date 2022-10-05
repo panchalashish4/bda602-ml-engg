@@ -14,6 +14,7 @@ jdbc_url = f"jdbc:mysql://{server}:{port}/{database}?permitMysqlScheme"
 jdbc_driver = "org.mariadb.jdbc.Driver"
 
 
+# Custom Transformer
 class RollingAvgTransformer(Transformer):
     """Class for calculating rolling average transformation"""
 
@@ -105,7 +106,6 @@ def rolling_avg(spark_session: SparkSession, df: DataFrame) -> DataFrame:
 
 
 def main():
-
     # Create Spark Session
     spark = SparkSession.builder.master("local[*]").getOrCreate()
     # Get data from mariadb and save it in a dataframe
