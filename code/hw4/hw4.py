@@ -192,6 +192,55 @@ def cat_resp_cont_predictor(response: Series, predictor: Series):
     # fig_2.show()
 
 
+def cont_resp_cat_predictor(response: Series, predictor: Series):
+    out = defaultdict(list)
+    for key, value in zip(predictor.values, response.values):
+        out[f"Predictor = {key}"].append(value)
+    response_values = [out[key] for key in out]
+    predictor_values = list(out.keys())
+
+    fig1 = ff.create_distplot(response_values, predictor_values, bin_size=0.2)
+    fig1.update_layout(
+        title=f"Continuous Response ({response.name}) by Categorical Predictor ({predictor.name})",
+        xaxis_title=f"Response ({response.name})",
+        yaxis_title="Distribution",
+    )
+    # fig1.show()
+
+    fig_2 = go.Figure()
+    for curr_hist, curr_group in zip(response_values, predictor_values):
+        fig_2.add_trace(
+            go.Violin(
+                x=numpy.repeat(curr_group, len(curr_hist)),
+                y=curr_hist,
+                name=curr_group,
+                box_visible=True,
+                meanline_visible=True,
+            )
+        )
+    fig_2.update_layout(
+        title=f"Continuous Response ({response.name}) by Categorical Predictor ({predictor.name})",
+        xaxis_title=f"Predictor ({predictor.name})",
+        yaxis_title=f"Response ({response.name})",
+    )
+
+    # fig_2.show()
+    return
+
+
+def cont_response_cont_predictor(response: Series, predictor: Series):
+
+    fig = px.scatter(x=predictor, y=response, trendline="ols")
+    fig.update_layout(
+        title=f"Continuous Response ({response.name}) by Continuous Predictor ({predictor.name})",
+        xaxis_title=f"Predictor ({predictor.name})",
+        yaxis_title=f"Response ({response.name})",
+    )
+    fig.show()
+
+    return
+
+
 def main():
     data_list = get_data()
     for dataset in data_list:
@@ -210,9 +259,14 @@ def main():
             elif response_type == 0 and predictor_type == 1:
                 cat_resp_cont_predictor(response, predictor)
             elif response_type == 1 and predictor_type == 0:
-                pass
-            elif response_type == 0 and predictor_type == 1:
-                pass
+                cont_resp_cat_predictor(response, predictor)
+            elif response_type == 1 and predictor_type == 1:
+                if response.dtypes not in ("int64", "float64"):
+                    response_name = response.name
+                    response = response.astype("category")
+                    response = response.cat.codes
+                    response.name = response_name
+                cont_response_cont_predictor(response, predictor)
 
 
 if __name__ == "__main__":
