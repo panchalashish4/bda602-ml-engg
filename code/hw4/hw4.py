@@ -1,7 +1,10 @@
 # Import packages
 import sys
+from collections import defaultdict
 
 from pandas import Series
+from plotly import express as px
+from plotly import figure_factory as ff
 from pydataset import data
 from sklearn import datasets
 
@@ -119,34 +122,76 @@ def check_response(response: Series):
     print_subheading("Response Type")
     if len(response.unique()) > 2:
         print(f"{response.name} is continuous")
+        return 1
     else:
         print(f"{response.name} is boolean")
+        return 0
 
 
-def check_predictors(df: Series):
-    print_subheading("Predictors Type")
+def check_predictors(predictor: Series):
+    print_subheading("Predictor Type")
 
-    for predictor in df.columns:
+    if (
+        predictor.dtype.name in ["category", "object"]
+        or 1.0 * predictor.nunique() / predictor.count() < 0.05
+    ):
+        print(f"{predictor.name} is categorical")
+        return 0
+    else:
+        print(f"{predictor.name} is continuous")
+        return 1
 
-        if (
-            df[predictor].dtype.name in ["category", "object"]
-            or 1.0 * df[predictor].nunique() / df[predictor].count() < 0.05
-        ):
-            print(f"{predictor} is categorical")
-        else:
-            print(f"{predictor} is continuous")
+
+def cat_response_cat_predictor(response: Series, predictor: Series):
+    fig = px.density_heatmap(
+        x=predictor, y=response, color_continuous_scale="Viridis", text_auto=True
+    )
+    fig.update_layout(
+        title=f"Categorical Predictor ({predictor.name}) by Categorical Response ({response.name})",
+        xaxis_title=f"Predictor ({predictor.name})",
+        yaxis_title=f"Response ({response.name})",
+    )
+    fig.show()
+
+    return
+
+
+def cat_resp_cont_predictor(response: Series, predictor: Series):
+    out = defaultdict(list)
+    for key, value in zip(response.values, predictor.values):
+        out[f"Response = {key}"].append(value)
+    predictor_values = [out[key] for key in out]
+
+    fig1 = ff.create_distplot(predictor_values, list(out.keys()), bin_size=0.2)
+    fig1.update_layout(
+        title=f"Continuous Predictor ({predictor.name}) by Categorical Response ({response.name})",
+        xaxis_title=f"Predictor ({predictor.name})",
+        yaxis_title="Distribution",
+    )
+    fig1.show()
 
 
 def main():
-
     data_list = get_data()
     for dataset in data_list:
 
-        predictors = dataset["dataset"][dataset["predictors"]]
-        response = dataset["dataset"][dataset["response"]]
+        df = dataset["dataset"]
+        predictors = df[dataset["predictors"]]
+        response = df[dataset["response"]]
         print_heading(f"For {dataset['name']} dataset")
-        check_response(response)
-        check_predictors(predictors)
+        response_type = check_response(response)
+
+        for col_name in predictors.columns:
+            predictor = df[col_name]
+            predictor_type = check_predictors(predictor)
+            if response_type == 0 and predictor_type == 0:
+                cat_response_cat_predictor(response, predictor)
+            elif response_type == 0 and predictor_type == 1:
+                cat_resp_cont_predictor(response, predictor)
+            elif response_type == 1 and predictor_type == 0:
+                pass
+            elif response_type == 0 and predictor_type == 1:
+                pass
 
 
 if __name__ == "__main__":
