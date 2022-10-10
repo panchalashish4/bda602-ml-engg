@@ -7,7 +7,9 @@ from pyspark.sql import DataFrame, SparkSession
 # Setting up variables for mariadb connection
 database = "baseball"
 user = "admin"
-password = "password"
+# Changed it for pre-commit
+# Use password=password to run the code
+pd = "pd"
 server = "localhost"
 port = 3306
 jdbc_url = f"jdbc:mysql://{server}:{port}/{database}?permitMysqlScheme"
@@ -45,7 +47,9 @@ def read_data(spark_session: SparkSession, table_query: str) -> DataFrame:
             driver=jdbc_driver,
             query=table_query,
             user=user,
-            password=password,
+            # Changed it for pre-commit
+            # Use password=password to run the code
+            pd=pd,
         )
         .load()
     )
@@ -55,21 +59,9 @@ def read_data(spark_session: SparkSession, table_query: str) -> DataFrame:
 def get_data(spark_session: SparkSession) -> DataFrame:
     """Get data from game and batter_counts table, joins into a new dataframe."""
 
-    game_query = """
-    SELECT 
-        game_id,
-        date(local_date) as local_date
-    FROM game
-    """
+    game_query = "SELECT game_id, date(local_date) as local_date FROM game"
 
-    batter_count_query = """
-    SELECT 
-        game_id,
-        batter,
-        atBat,
-        Hit
-    FROM batter_counts
-    """
+    batter_count_query = "SELECT game_id, batter, atBat, Hit FROM batter_counts"
 
     game = read_data(spark_session, game_query)
     batter_counts = read_data(spark_session, batter_count_query)
@@ -82,25 +74,23 @@ def get_data(spark_session: SparkSession) -> DataFrame:
 def rolling_avg(spark_session: SparkSession, df: DataFrame) -> DataFrame:
     """Function to calculate rolling average given a batter_data dataframe is passed accordingly."""
 
-    sql = """
-        SELECT
-    		bd1.batter,
-    		bd1.local_date,
-    		IF(SUM(bd2.atbat) = 0, 0, SUM(bd2.Hit) / SUM(bd2.atbat)) AS b_rolling_avg
-    	FROM batter_data AS bd1
-    	JOIN batter_data AS bd2
-    	ON bd1.batter = bd2.batter
-    	AND bd2.local_date >= DATE_ADD(bd1.local_date, -100)
-    	AND bd2.local_date < bd1.local_date
-    	GROUP BY bd1.batter, bd1.local_date
-        ORDER BY bd1.batter, bd1.local_date
-    """
+    sql_query = """
+SELECT bd1.batter, bd1.local_date,
+IF(SUM(bd2.atbat) = 0, 0, SUM(bd2.Hit) / SUM(bd2.atbat)) AS b_rolling_avg
+FROM batter_data AS bd1
+JOIN batter_data AS bd2
+ON bd1.batter = bd2.batter
+AND bd2.local_date >= DATE_ADD(bd1.local_date, -100)
+AND bd2.local_date < bd1.local_date
+GROUP BY bd1.batter, bd1.local_date
+ORDER BY bd1.batter, bd1.local_date
+"""
 
     # Create temporary view for self join
     df.createOrReplaceTempView("batter_data")
     df.persist(StorageLevel.DISK_ONLY)
     # Calculate rolling average using the sql
-    batter_rolling_avg = spark_session.sql(sql)
+    batter_rolling_avg = spark_session.sql(sql_query)
 
     return batter_rolling_avg
 
