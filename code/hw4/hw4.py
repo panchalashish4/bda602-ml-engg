@@ -2,9 +2,11 @@
 import sys
 from collections import defaultdict
 
+import numpy
 from pandas import Series
 from plotly import express as px
 from plotly import figure_factory as ff
+from plotly import graph_objects as go
 from pydataset import data
 from sklearn import datasets
 
@@ -151,7 +153,7 @@ def cat_response_cat_predictor(response: Series, predictor: Series):
         xaxis_title=f"Predictor ({predictor.name})",
         yaxis_title=f"Response ({response.name})",
     )
-    fig.show()
+    # fig.show()
 
     return
 
@@ -161,14 +163,33 @@ def cat_resp_cont_predictor(response: Series, predictor: Series):
     for key, value in zip(response.values, predictor.values):
         out[f"Response = {key}"].append(value)
     predictor_values = [out[key] for key in out]
+    response_values = list(out.keys())
 
-    fig1 = ff.create_distplot(predictor_values, list(out.keys()), bin_size=0.2)
+    fig1 = ff.create_distplot(predictor_values, response_values, bin_size=0.2)
     fig1.update_layout(
         title=f"Continuous Predictor ({predictor.name}) by Categorical Response ({response.name})",
         xaxis_title=f"Predictor ({predictor.name})",
         yaxis_title="Distribution",
     )
-    fig1.show()
+    # fig1.show()
+
+    fig_2 = go.Figure()
+    for curr_hist, curr_group in zip(predictor_values, response_values):
+        fig_2.add_trace(
+            go.Violin(
+                x=numpy.repeat(curr_group, len(curr_hist)),
+                y=curr_hist,
+                name=curr_group,
+                box_visible=True,
+                meanline_visible=True,
+            )
+        )
+    fig_2.update_layout(
+        title=f"Continuous Predictor ({predictor.name}) by Categorical Response ({response.name})",
+        xaxis_title=f"Response ({response.name})",
+        yaxis_title=f"Predictor ({predictor.name})",
+    )
+    # fig_2.show()
 
 
 def main():
