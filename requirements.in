@@ -1,7 +1,9 @@
 numpy
 pandas
 plotly
+pydataset
 pyspark
 pyspark-stubs
+seaborn
 scikit-learn
 sklearn
