@@ -4,7 +4,8 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy
-from pandas import Series
+import statsmodels
+from pandas import DataFrame, Series
 from plotly import express as px
 from plotly import figure_factory as ff
 from plotly import graph_objects as go
@@ -269,6 +270,7 @@ def check_and_plot(dataset_name: str, response: Series, predictor: Series) -> No
         cat_response_cat_predictor(dataset_name, response, predictor)
     elif response_type == 0 and predictor_type == 1:
         cat_resp_cont_predictor(dataset_name, response, predictor)
+        logistic_regression_scores(dataset_name, response, predictor)
     elif response_type == 1 and predictor_type == 0:
         cont_resp_cat_predictor(dataset_name, response, predictor)
     elif response_type == 1 and predictor_type == 1:
@@ -278,6 +280,7 @@ def check_and_plot(dataset_name: str, response: Series, predictor: Series) -> No
             response = response.cat.codes
             response.name = response_name
         cont_response_cont_predictor(dataset_name, response, predictor)
+        linear_regression_scores(dataset_name, response, predictor)
     else:
         print("Unable to plot the datatypes!!!")
         print(f"Response: {response.dtypes}, Predictor: {predictor.dtypes}")
@@ -293,10 +296,69 @@ def save_plot(dataset_name: str, fig: Figure, name: str):
     return
 
 
+def linear_regression_scores(
+    dataset_name: str, response: Series, predictor: Series
+) -> None:
+    print_subheading("Linear Regression Scores")
+    pred = statsmodels.api.add_constant(predictor)
+    linear_regression_model = statsmodels.api.OLS(response, pred)
+    linear_regression_model_fitted = linear_regression_model.fit()
+    # print(f"Variable: {predictor.name}")
+    # print(linear_regression_model_fitted.summary())
+
+    # Get the stats
+    t_value = round(linear_regression_model_fitted.tvalues[1], 6)
+    p_value = "{:.6e}".format(linear_regression_model_fitted.pvalues[1])
+
+    # Plot the figure
+    fig = px.scatter(x=predictor, y=response, trendline="ols")
+    title = f"Variable: {predictor.name}: (t-value={t_value}) (p-value={p_value})"
+    fig.update_layout(
+        title=title,
+        xaxis_title=f"Variable: {predictor.name}",
+        yaxis_title=f"Response: {response.name}",
+    )
+    # fig.show()
+    save_plot(dataset_name, fig, title)
+
+    return
+
+
+def logistic_regression_scores(
+    dataset_name: str, response: Series, predictor: Series
+) -> None:
+    print_subheading("Logistic Regression Scores")
+    pred = statsmodels.api.add_constant(predictor)
+    logistic_regression_model = statsmodels.api.Logit(response, pred)
+    logistic_regression_model_fitted = logistic_regression_model.fit()
+    # print(f"Variable: {predictor.name}")
+    # print(logistic_regression_model_fitted.summary())
+
+    # Get the stats
+    t_value = round(logistic_regression_model_fitted.tvalues[1], 6)
+    p_value = "{:.6e}".format(logistic_regression_model_fitted.pvalues[1])
+
+    # Plot the figure
+    fig = px.scatter(x=predictor, y=response, trendline="ols")
+    title = f"Variable: {predictor.name}: (t-value={t_value}) (p-value={p_value})"
+    fig.update_layout(
+        title=title,
+        xaxis_title=f"Variable: {predictor.name}",
+        yaxis_title=f"Response: {response.name}",
+    )
+    # fig.show()
+    save_plot(dataset_name, fig, title)
+
+    return
+
+
+def random_forest_scores(response: Series, continuous_predictors: DataFrame):
+    pass
+
+
 def main():
     data_list = get_data()
     for dataset in data_list:
-
         df = dataset["dataset"]
         dataset_name = dataset["name"]
         predictors = df[dataset["predictors"]]
@@ -306,6 +368,14 @@ def main():
         for col_name in predictors.columns:
             predictor = df[col_name]
             check_and_plot(dataset_name, response, predictor)
+
+        continuous_predictors = [
+            predictor
+            for predictor in predictors
+            if check_predictors(df[predictor]) == 1
+        ]
+        continuous_predictors = df[continuous_predictors]
+        print(response)
 
 
 if __name__ == "__main__":
