@@ -12,6 +12,7 @@ from plotly import graph_objects as go
 from plotly.graph_objs import Figure
 from pydataset import data
 from sklearn import datasets
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 
 def print_heading(title):
@@ -353,7 +354,23 @@ def logistic_regression_scores(
 
 
 def random_forest_scores(response: Series, continuous_predictors: DataFrame):
-    pass
+
+    if response.dtypes not in ("int", "float"):
+        response_name = response.name
+        response = response.astype("category")
+        response = response.cat.codes
+        response.name = response_name
+
+    if check_response(response) == 1 and continuous_predictors.shape[1] > 1:
+        random_forest_regressor = RandomForestRegressor(random_state=42)
+        random_forest_regressor.fit(continuous_predictors, response)
+        print(random_forest_regressor.feature_importances_)
+    elif check_response(response) == 0 and continuous_predictors.shape[1] > 1:
+        random_forest_classifier = RandomForestClassifier(random_state=42)
+        random_forest_classifier.fit(continuous_predictors, response)
+        print(random_forest_classifier.feature_importances_)
+
+    return
 
 
 def main():
@@ -375,7 +392,7 @@ def main():
             if check_predictors(df[predictor]) == 1
         ]
         continuous_predictors = df[continuous_predictors]
-        print(response)
+        random_forest_scores(response, continuous_predictors)
 
 
 if __name__ == "__main__":
