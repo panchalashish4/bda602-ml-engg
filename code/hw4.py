@@ -420,7 +420,6 @@ def random_forest_scores(
 
     scores = {}
     for i, importance in enumerate(features_importance):
-        # print(continuous_predictors.columns[0])
         scores[continuous_predictors.columns[i]] = importance
     # print(scores)
 
@@ -436,7 +435,7 @@ def difference_with_mean_of_response(response: Series, predictor: Series) -> int
 
     if check_predictors(predictor) == 1:
 
-        predictor_bins = pd.qcut(predictor, 10, duplicates="drop")
+        predictor_bins = pd.cut(predictor, 10, duplicates="drop")
         predictor_table["LowerBin"] = pd.Series(
             [predictor_bin.left for predictor_bin in predictor_bins]
         )
@@ -526,7 +525,7 @@ def difference_with_mean_of_response(response: Series, predictor: Series) -> int
     # fig.show()
     url = save_plot(fig, title)
 
-    print(difference_with_mean_table)
+    # print(difference_with_mean_table)
     mean_squared_diff = difference_with_mean_table["mean_squared_diff"].sum()
     mean_squared_diff_weighted = difference_with_mean_table[
         "mean_squared_diff_weighted"
@@ -599,14 +598,13 @@ def main():
         # Get Random Forest Scores
         scores = random_forest_scores(response, predictors, df)
 
+        # print(predictors_dict)
         # Check if predictor has RF value and it in all predictors dictionary
         # Else give None
         for key, value in scores.items():
             for key2, value2 in predictors_dict.items():
                 if key == key2:
                     predictors_dict[key2]["RF VarImp"] = value
-                else:
-                    predictors_dict[key2]["RF VarImp"] = None
 
         # Create column name for response column
         response_name = response.name
@@ -623,6 +621,8 @@ def main():
         s = scores_df.T.reset_index(drop=True)
         # Insert response as first column
         s.insert(0, response_text_type, response_name)
+        # Insert None for nan values
+        s = s.where(pd.notnull(s), None)
 
         # Make url clickable
         s = s.style.format(
