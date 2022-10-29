@@ -2,6 +2,7 @@ import itertools
 import random
 import sys
 import warnings
+import webbrowser
 from collections import defaultdict
 from pathlib import Path
 from typing import List
@@ -387,7 +388,7 @@ def cont_resp_cat_predictor(response: Series, predictor: Series) -> str:
 
 
 def correlation_matrix(x1, x2, score) -> Figure:
-    """Create Co-relation Matrix between the predictors"""
+    """Create Correlation Matrix between the predictors"""
 
     figure = go.Figure(
         data=go.Heatmap(
@@ -445,7 +446,7 @@ def brute_force_matrix(
 
 
 def corr_cont_cont(df: DataFrame, cont_cont: DataFrame, plot=True) -> DataFrame:
-    """Calculates Co-relation between Continuous-Continuous Predictor Pairs and Create Plot"""
+    """Calculates Correlation between Continuous-Continuous Predictor Pairs and Create Plot"""
 
     score_list = []
     for i in cont_cont:
@@ -478,7 +479,7 @@ def corr_cont_cont(df: DataFrame, cont_cont: DataFrame, plot=True) -> DataFrame:
 
 
 def corr_catg_catg(df: DataFrame, catg_catg: DataFrame, plot=True) -> DataFrame:
-    """Calculates Co-relation between Category-Category Predictor Pairs and Create Plot"""
+    """Calculates Correlation between Category-Category Predictor Pairs and Create Plot"""
 
     score_list = []
     for i in catg_catg:
@@ -512,7 +513,7 @@ def corr_catg_catg(df: DataFrame, catg_catg: DataFrame, plot=True) -> DataFrame:
 
 
 def corr_catg_cont(df: DataFrame, catg_cont: DataFrame, plot=True) -> DataFrame:
-    """Calculates Co-relation between Category-Continuous Predictor Pairs and Create Plot"""
+    """Calculates Correlation between Category-Continuous Predictor Pairs and Create Plot"""
 
     score_list = []
     for i in catg_cont:
@@ -805,6 +806,9 @@ def main():
         generate_html(cont_cont_df, "cont_cont_corr_table")
         generate_html(cont_cont_mean_df, "cont_cont_mean_table")
         print("Continuous-Continuous Pairs: Successful! 3 Files Generated.")
+        webbrowser.open("cont_cont_corr_table.html")
+        webbrowser.open("cont_cont_corr_matrix.html")
+        webbrowser.open("cont_cont_mean_table.html")
     else:
         print(
             "Continuous-Continuous Pairs: Could not generate anything as the number of continuous predictors is "
@@ -819,6 +823,10 @@ def main():
         generate_html(catg_catg_df, "catg_catg_corr_table")
         generate_html(catg_catg_mean_df, "catg_catg_mean_table")
         print("Categorical-Categorical Pairs: Successful! 3 Files Generated.")
+        webbrowser.open("catg_catg_corr_table.html")
+        webbrowser.open("catg_catg_corr_matrix.html")
+        webbrowser.open("catg_catg_mean_table.html")
+
     else:
         print(
             "Categorical-Categorical Pairs: Could not generate anything as the number of categorical predictors is "
@@ -833,6 +841,9 @@ def main():
         generate_html(catg_cont_df, "catg_cont_corr_table")
         generate_html(catg_cont_mean_df, "catg_cont_mean_table")
         print("Categorical-Continuous Pairs: Successful! 3 Files Generated.")
+        webbrowser.open("catg_cont_corr_table.html")
+        webbrowser.open("catg_cont_corr_matrix.html")
+        webbrowser.open("catg_cont_mean_table.html")
     else:
         print(
             "Categorical-Continuous Pairs: Could not generate anything as the number of categorical or continuous "
