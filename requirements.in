@@ -1,3 +1,4 @@
+mariadb
 numpy
 pandas
 plotly
@@ -6,5 +7,6 @@ pyspark
 pyspark-stubs
 seaborn
 statsmodels
+sqlalchemy
 scikit-learn
 sklearn
