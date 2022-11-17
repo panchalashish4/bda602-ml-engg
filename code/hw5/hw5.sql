@@ -1,96 +1,44 @@
 USE baseball;
 
-# Take a look at existing tables columns
-# SELECT *
-# FROM pitcher_counts
-# ORDER BY game_id;
-#
-# SELECT *
-# FROM game
-# ORDER BY game_id;
-#
-# SELECT *
-# FROM pitcher_counts;
-#
-# SELECT * FROM boxscore;
-
-
-# Create Temporary table for pitchers
 DROP TEMPORARY TABLE IF EXISTS pitcher_temp;
-CREATE TEMPORARY TABLE pitcher_temp AS
-SELECT g.game_id,
-       g.local_date,
-       pc.team_id,
-       pc.pitcher,
-       pc.startingInning,
-       pc.endingInning,
-       pc.outsPlayed / 3 as inningsPitched,
-       pc.Hit,
-       pc.Strikeout,
-       pc.atBat,
-       pc.toBase,
-       pc.Walk,
-       pc.plateApperance,
-       pc.Home_Run,
-       pc.Hit_By_Pitch,
-       pc.Sac_Bunt,
-       pc.Sac_Fly,
-       pc.Fan_interference + pc.Batter_Interference + pc.Catcher_Interference as Interference,
-       pc.Intent_Walk,
+CREATE TEMPORARY TABLE pitcher_temp
+(INDEX game_id_pt_ix (game_id), INDEX team_id_pt_ix (team_id), INDEX local_date_pt_ix (game_date))
+SELECT pc.*,
        0.89 * (1.255 * (pc.Hit-pc.Home_Run) + 4 * pc.Home_Run)
            + 0.56 * (pc.Walk + pc.Hit_By_Pitch - pc.Intent_Walk) as pitchersTotalBases,
-       pc.pitchesThrown,
-       pc.outsPlayed,
-       pc.startingPitcher,
-       pc.homeTeam,
-       pc.awayTeam
-FROM pitcher_counts pc
-JOIN game g on pc.game_id = g.game_id
-ORDER BY pc.game_id, pc.pitcher;
+       pc.Fan_interference + pc.Batter_Interference + pc.Catcher_Interference as Interference,
+       g.local_date AS game_date,
+       tbc.inning
+FROM team_pitching_counts pc
+JOIN team_batting_counts tbc
+ON tbc.game_id = pc.game_id
+AND tbc.team_id = pc.team_id
+JOIN game g
+ON pc.game_id = g.game_id
+ORDER BY pc.game_id, pc.team_id;
 
-# Take a look at columns
-# SELECT * FROM pitcher_temp;
+# SELECT * FROM pitcher_temp
+# WHERE game_id=276;
 
-# Using Pitcher's Temporary table create features
-# Creating features for pitchers in pitcher_stats_temp
 DROP TEMPORARY TABLE IF EXISTS pitcher_stats_temp;
 CREATE TEMPORARY TABLE pitcher_stats_temp
-(INDEX game_id_ix (game_id), INDEX pitcher_ix (pitcher), INDEX local_date_ix (local_date))
-SELECT pt.game_id,
-       pt.local_date,
-       pt.pitcher,
-       pt.startingPitcher,
-       pt.homeTeam,
-       pt.awayTeam,
-       pt.outsPlayed,
-       pt.startingInning,
-       pt.endingInning,
-       pt.inningsPitched,
-       pt.plateApperance,
-       pt.Walk as basesOnBalls,
+(INDEX game_id_pst_ix (game_id), INDEX team_id_pst_ix (team_id), INDEX game_date_pst_ix (game_date))
+ENGINE=MEMORY
+SELECT pt1.*,
+       IF(SUM(pt.inning)=0, 0,
+           9 * (SUM(pt.Walk) / SUM(pt.inning))) as basesOnBalls9,
 
-       IF(SUM(pt.inningsPitched)=0, 0,
-           9 * (SUM(pt.Walk) / SUM(pt.inningsPitched))) as basesOnBalls9,
+       IF(SUM(pt.inning)=0, 0,
+           9 * (SUM(pt.Hit) / SUM(pt.inning))) as hitsAllowed9,
 
-       pt.Hit,
+       IF(SUM(pt.inning)=0, 0,
+           9 * (SUM(pt.Home_Run) / SUM(pt.inning))) as homeRuns9,
 
-       IF(SUM(pt.inningsPitched)=0, 0,
-           9 * (SUM(pt.Hit) / SUM(pt.inningsPitched))) as hitsAllowed9,
-
-       pt.Home_Run,
-
-       IF(SUM(pt.inningsPitched)=0, 0,
-           9 * (SUM(pt.Home_Run) / SUM(pt.inningsPitched))) as homeRuns9,
-
-       pt.Strikeout,
-
-       IF(SUM(pt.inningsPitched)=0, 0,
-           9 * (SUM(pt.Strikeout) / SUM(pt.inningsPitched))) as Strikeout9,
+       IF(SUM(pt.inning)=0, 0,
+           9 * (SUM(pt.Strikeout) / SUM(pt.inning))) as Strikeout9,
 
        IF(SUM(pt.Walk) = 0, 0,
            SUM(pt.Strikeout) / SUM(pt.Walk)) as strikeoutToWalkRatio,
-
-       pt.Interference,
 
        IF((SUM(pt.plateApperance)
                    - SUM(pt.toBase)
@@ -105,137 +53,172 @@ SELECT pt.game_id,
                    - SUM(pt.Sac_Fly)
                    - SUM(pt.Interference))) as oppBattingAvg,
 
-       pt.pitchersTotalBases,
-
-       IF(SUM(pt.inningsPitched)=0 OR SUM(pt.plateApperance)=0, 0,
+       IF(SUM(pt.inning)=0 OR SUM(pt.plateApperance)=0, 0,
            9 * (((SUM(pt.Hit) + SUM(pt.Walk) + SUM(pt.Hit_By_Pitch)) * SUM(pt.pitchersTotalBases))
-                / (SUM(pt.plateApperance) * SUM(pt.inningsPitched)))) as CERA,
+                / (SUM(pt.plateApperance) * SUM(pt.inning)))) as CERA,
 
-       IF(SUM(pt.inningsPitched)=0, 0,
-           (SUM(pt.Strikeout) + SUM(pt.Walk)) / SUM(pt.inningsPitched)) as powerFinesseRatio,
+       IF(SUM(pt.inning)=0, 0,
+           (SUM(pt.Strikeout) + SUM(pt.Walk)) / SUM(pt.inning)) as powerFinesseRatio,
 
-       IF(SUM(pt.inningsPitched)=0, 0,
-           (SUM(pt.Walk) + SUM(pt.Hit)) / SUM(pt.inningsPitched)) as WHIP,
+       IF(SUM(pt.inning)=0, 0,
+           (SUM(pt.Walk) + SUM(pt.Hit)) / SUM(pt.inning)) as WHIP,
 
-       IF(SUM(pt.inningsPitched)=0, 0,
+       IF(SUM(pt.inning)=0, 0,
            3 + (((13 * SUM(pt.Home_Run)) + (3 * (SUM(pt.Walk) + SUM(pt.Hit_By_Pitch)))
                      - (2 * SUM(pt.Strikeout)))
-               / SUM(pt.inningsPitched))) as DICE
+               / SUM(pt.inning))) as DICE,
 
-FROM pitcher_temp pt
-GROUP BY game_id, pitcher
-ORDER BY game_id, pitcher;
+       IF(SUM(pt.atbat) = 0, 0, SUM(pt.hit) / SUM(pt.atbat)) AS b_avg
 
-# Take a look at Pitcher's Stats with new Features
+FROM pitcher_temp pt1
+JOIN pitcher_temp pt
+ON pt1.team_id = pt.team_id
+AND pt.game_date < pt1.game_date
+GROUP BY pt1.game_id, pt1.team_id
+ORDER BY pt1.game_id, pt1.team_id;
+
 # SELECT * FROM pitcher_stats_temp;
+# 5642
 
-# Create Temporary table for Starting Pitcher
-# This table will create new Feature game_started
-# If pitcher is Starting Pitcher, it will count how many times he started game before
-DROP TEMPORARY TABLE IF EXISTS starting_pitcher;
-CREATE TEMPORARY TABLE starting_pitcher
-(INDEX game_id_sp_ix (game_id), INDEX pitcher_sp_ix (pitcher), INDEX local_date_sp_ix (local_date))
+DROP TEMPORARY TABLE IF EXISTS starting_pitcher_temp;
+CREATE TEMPORARY TABLE starting_pitcher_temp
+(INDEX game_id_spt_ix (game_id), INDEX pitcher_spt_ix (pitcher), INDEX local_date_spt_ix (local_date))
+SELECT pc.*,
+       g.local_date,
+       tbc.inning,
+       pc.outsPlayed/3 as innings_pitched,
+       IF(tbc.inning=pc.endingInning, 1, 0) as completeGame
+FROM pitcher_counts pc
+JOIN game g on pc.game_id = g.game_id
+JOIN team_batting_counts tbc on g.game_id = tbc.game_id
+GROUP BY pc.game_id, pc.pitcher
+ORDER BY pc.game_id, pc.pitcher;
+
+# SELECT * FROM starting_pitcher_temp
+# WHERE startingPitcher=1
+# AND completeGame=1;
+# WHERE pitcher = 424324;
+
+DROP TEMPORARY TABLE IF EXISTS starting_pitcher_stats_temp;
+CREATE TEMPORARY TABLE starting_pitcher_stats_temp
+(INDEX game_id_spst_ix (game_id), INDEX team_id_spst_ix (team_id), INDEX local_date_spst_ix (local_date))
 ENGINE=MEMORY
 SELECT pst1.game_id,
        pst1.pitcher,
+       pst1.team_id,
        pst1.local_date,
        pst1.startingPitcher,
+       pst1.endingInning,
        pst1.homeTeam,
        pst1.awayTeam,
-       COUNT(DISTINCT pst2.game_id) as game_started
-FROM pitcher_stats_temp pst1
-JOIN pitcher_stats_temp pst2
+       pst1.outsPlayed,
+       SUM(pst2.innings_pitched) as sp_innings_pitched,
+       COUNT(DISTINCT pst2.game_id) as sp_games_started,
+       SUM(pst2.completeGame) as sp_complete_games,
+       IF(SUM(pst2.innings_pitched)=0, 0,
+           9 * (SUM(pst2.Walk) / SUM(pst2.innings_pitched))) as sp_basesOnBalls9
+FROM starting_pitcher_temp pst1
+JOIN starting_pitcher_temp pst2
 ON pst1.pitcher = pst2.pitcher
 AND pst2.local_date < pst1.local_date
 WHERE pst2.startingPitcher = 1 and pst1.startingPitcher = 1
 GROUP BY pst1.game_id, pst1.pitcher
 ORDER BY pst1.game_id, pst1.pitcher;
 
-# SELECT * FROM starting_pitcher
-# WHERE pitcher = 408206
-# ORDER BY game_id, pitcher;
+# SELECT * FROM starting_pitcher_stats_temp
+# ORDER BY game_id desc;
 
-# SELECT * FROM pitcher_stats_temp
-# WHERE pitcher = 446452;
-
-# Combined table for pitchers_stats and starting_pitcher stats
 DROP TEMPORARY TABLE IF EXISTS pitchers_combined;
 CREATE TEMPORARY TABLE pitchers_combined
-(INDEX game_id_cm_ix (game_id), INDEX pitcher_cm_ix (pitcher), INDEX local_date_cm_ix (local_date))
-SELECT pst.*, SUM(sp.game_started) as game_started
-FROM pitcher_stats_temp pst
-LEFT JOIN starting_pitcher sp
-ON pst.game_id = sp.game_id
-AND pst.pitcher = sp.pitcher
-# WHERE pst.pitcher = 408206
-GROUP BY pst.game_id, pst.pitcher
-ORDER BY pst.game_id desc, pst.pitcher;
+(INDEX game_id_cm_ix (game_id), INDEX team_id_cm_ix (team_id), INDEX local_date_cm_ix (game_date))
+ENGINE=MEMORY
+SELECT  tpc.*,
+        g.local_date as game_date,
+        tbc.inning,
+        IF(tbc.homeTeam=1, tbc.finalScore, 0) as Home_Team_Score,
+        IF(tbc.finalScore, tbc.opponent_finalScore, 0) as Away_Team_Score,
+        pst.b_avg,
+        pst.basesOnBalls9 as basesOnBalls9,
+        pst.hitsAllowed9 as hitsAllowed9,
+        pst.homeRuns9 as homeRuns9,
+        pst.Strikeout9 as Strikeout9,
+        pst.strikeoutToWalkRatio as strikeoutToWalkRatio,
+        pst.oppBattingAvg as oppBattingAvg,
+        pst.CERA as CERA,
+        pst.powerFinesseRatio as powerFinesseRatio,
+        pst.WHIP as WHIP,
+        pst.DICE as DICE,
+        spst.sp_innings_pitched,
+        spst.sp_games_started,
+        spst.sp_complete_games,
+        spst.sp_basesOnBalls9
+FROM team_pitching_counts tpc
+JOIN game g on tpc.game_id = g.game_id
+JOIN team_batting_counts tbc on g.game_id = tbc.game_id
+LEFT JOIN pitcher_stats_temp pst
+ON tpc.game_id = pst.game_id AND tpc.team_id = pst.team_id
+LEFT JOIN starting_pitcher_stats_temp spst
+ON pst.game_id = spst.game_id AND pst.team_id = spst.team_id
+GROUP BY tpc.game_id, tpc.team_id
+ORDER BY tpc.game_id, tpc.team_id;
 
-# Take a look at columns
-# ELECT * FROM pitchers_combined;
+# SELECT * FROM pitchers_combined
+# ORDER BY game_id;
 
-# Calculate Average stats of pitchers of last 100 days
-DROP TEMPORARY TABLE IF EXISTS  pitcher_rolling_100;
-CREATE TEMPORARY TABLE pitcher_rolling_100 ENGINE=MEMORY
-SELECT
-    pst1.game_id,
-    pst1.pitcher,
-    AVG(pst2.basesOnBalls9) as basesOnBalls9_100,
-    AVG(pst2.hitsAllowed9) as hitsAllowed9_100,
-    AVG(pst2.homeRuns9) as homeRuns9_100,
-    AVG(pst2.Strikeout9) as Strikeout9_100,
-    AVG(pst2.strikeoutToWalkRatio) as strikeoutToWalkRatio_100,
-    AVG(pst2.oppBattingAvg) as oppBattingAvg_100,
-    AVG(pst2.CERA) as CERA_100,
-    AVG(pst2.powerFinesseRatio) as powerFinesseRatio_100,
-    AVG(pst2.WHIP) as WHIP_100,
-    AVG(pst2.DICE) as DICE_100
-FROM pitchers_combined pst1
-JOIN pitchers_combined pst2
-ON pst1.pitcher = pst2.pitcher
-AND pst2.local_date >= DATE_ADD(pst1.local_date, INTERVAL -100 DAY)
-AND pst2.local_date < pst1.local_date
-GROUP BY pst1.game_id, pst1.pitcher
-ORDER BY pst1.game_id desc, pst1.pitcher;
+# SELECT * FROM team_pitching_counts;
+# SELECT * FROM team_batting_counts;
 
-# Take a look at columns
-# SELECT * FROM pitcher_rolling_100;
-
-# Create index on rolling avg table
-CREATE INDEX game_id_100_ix ON pitcher_rolling_100 (game_id);
-CREATE INDEX pitcher_100_ix ON pitcher_rolling_100 (pitcher);
 
 # Create final stats table for pitchers
 DROP TABLE IF EXISTS pitchers_stats_calc;
 CREATE TABLE pitchers_stats_calc
-(INDEX game_id_sc_ix (game_id), INDEX pitcher_sc_ix (pitcher), INDEX local_date_sc_ix (local_date))
-SELECT pst.*,
-       pr100.basesOnBalls9_100,
-       pr100.hitsAllowed9_100,
-       pr100.homeRuns9_100,
-       pr100.Strikeout9_100,
-       pr100.strikeoutToWalkRatio_100,
-       pr100.oppBattingAvg_100,
-       pr100.CERA_100,
-       pr100.powerFinesseRatio_100,
-       pr100.WHIP_100,
-       pr100.DICE_100
-FROM pitchers_combined pst
-LEFT JOIN pitcher_rolling_100 pr100
-ON pst.game_id = pr100.game_id
-AND pst.pitcher = pr100.pitcher
-ORDER BY pst.game_id, pst.pitcher;
+SELECT
+        h.game_id,
+        h.team_id as h_team,
+        a.team_id as a_team,
+        h.game_date,
+        h.b_avg as h_bat_avg,
+        a.b_avg as a_bat_avg,
+        h.basesOnBalls9 as h_basesOnBalls9,
+        a.basesOnBalls9 as a_basesOnBalls9,
+        h.hitsAllowed9 as h_hitsAllowed9,
+        a.hitsAllowed9 as a_hitsAllowed9,
+        h.homeRuns9 as h_homeRuns9,
+        a.homeRuns9 as a_homeRuns9,
+        h.Strikeout9 as h_Strikeout9,
+        a.Strikeout9 as a_Strikeout9,
+        h.strikeoutToWalkRatio as h_strikeoutToWalkRatio,
+        a.strikeoutToWalkRatio as a_strikeoutToWalkRatio,
+        h.oppBattingAvg as h_oppBattingAvg,
+        a.oppBattingAvg as a_oppBattingAvg,
+        h.CERA as h_CERA,
+        a.CERA as a_CERA,
+        h.powerFinesseRatio as h_powerFinesseRatio,
+        a.powerFinesseRatio as a_powerFinesseRatio,
+        h.WHIP as h_WHIP,
+        a.WHIP as a_WHIP,
+        h.DICE as h_DICE,
+        a.DICE as a_DICE,
+        h.sp_innings_pitched as h_sp_innings_pitched,
+        a.sp_innings_pitched as a_sp_innings_pitched,
+        h.sp_games_started as h_sp_games_started,
+        a.sp_games_started as a_sp_games_started,
+        h.sp_complete_games as h_sp_complete_games,
+        a.sp_complete_games as a_sp_complete_games,
+        h.sp_basesOnBalls9 as h_sp_basesOnBalls9,
+        a.sp_basesOnBalls9 as a_sp_basesOnBalls9,
+        h.win as Home_Team_Wins
+FROM pitchers_combined h
+JOIN pitchers_combined a
+ON h.game_id = a.game_id AND a.awayTeam = 1
+WHERE h.homeTeam = 1
+ORDER BY h.game_id, h.team_id;
 
-# Take a look at columns
-# SELECT * FROM pitchers_stats_calc
-# ORDER BY game_id desc;
 
+SELECT * FROM pitchers_stats_calc
+ORDER BY game_id desc;
 
-
-
-
-
-
-
+# SELECT * FROM boxscore
+# WHERE game_id = 356069;
 
 
