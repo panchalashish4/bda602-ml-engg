@@ -1,10 +1,16 @@
 import sys
 
-import pandas
+import brute_force_analysis
+import generate_output
+import pandas as pd
+import resp_pred_analysis
 import sqlalchemy
+from pandas import DataFrame
 
 
-def main():
+def get_data() -> DataFrame:
+    """Get data from mariadb"""
+
     db_user = "admin"
     db_pass = "password"  # pragma: allowlist secret
     db_host = "localhost"
@@ -12,30 +18,26 @@ def main():
     connect_string = (
         f"mariadb+mariadbconnector://{db_user}:{db_pass}@{db_host}/{db_database}"
     )
-
     sql_engine = sqlalchemy.create_engine(connect_string)
 
     query = """
-        SELECT
-                g.game_id
-                , away_t.name AS away_team
-                , home_t.name AS home_team
-                , MAX(home_score) AS home_score
-                , MAX(away_score) AS away_score
-                , CASE
-                    WHEN MAX(home_score) > MAX(away_score) THEN CONCAT(home_t.name, " Wins")
-                    WHEN MAX(home_score) < MAX(away_score) THEN CONCAT(away_t.name, " Wins")
-                    ELSE CONCAT(home_t.name, " and ", away_t.name, " tied") END AS winning_team
-                , MAX(inning) AS last_inning
-            FROM inning i
-            JOIN game g ON g.game_id = i.game_id
-            JOIN team away_t ON g.away_team_id = away_t.team_id
-            JOIN team home_t ON g.home_team_id = home_t.team_id
-            GROUP BY g.game_id, away_t.name, home_t.name
-            ORDER BY g.game_id, away_t.name, home_t.name
+        SELECT * FROM pitchers_stats_calc
     """
-    df = pandas.read_sql_query(query, sql_engine)
-    print(df.head())
+
+    df = pd.read_sql_query(query, sql_engine)
+    df = df.fillna(0)
+
+    return df
+
+
+def main():
+    pd.options.display.max_columns = None
+    df = get_data()
+    response = df["Home_Team_Wins"]
+    predictors = df.drop(["Home_Team_Wins", "game_date"], axis=1)
+    resp_pred_analysis.do_analysis(df, predictors, response)
+    brute_force_analysis.do_analysis(df, predictors.columns, response.name)
+    generate_output.just_do_it()
 
 
 if __name__ == "__main__":

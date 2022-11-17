@@ -39,6 +39,7 @@ packaging==21.3
 pandas==1.5.1
     # via
     #   -r requirements.in
+    #   pretty-html-table
     #   pydataset
     #   seaborn
     #   statsmodels
@@ -47,6 +48,8 @@ patsy==0.5.3
 pillow==9.3.0
     # via matplotlib
 plotly==5.11.0
+    # via -r requirements.in
+pretty-html-table==0.9.16
     # via -r requirements.in
 py4j==0.10.9
     # via pyspark

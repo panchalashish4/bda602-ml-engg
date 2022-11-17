@@ -2,6 +2,7 @@ mariadb
 numpy
 pandas
 plotly
+pretty_html_table
 pydataset
 pyspark
 pyspark-stubs
