@@ -495,15 +495,38 @@ def do_analysis(df: DataFrame, predictors: DataFrame, response: Series):
         }
     )
 
-    # Set borders for the table
+    # Set borders for the table, Reference Link:
+    # https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html
+
     s = s.set_table_styles(
         [
-            {"selector": "", "props": [("border", "1px solid grey")]},
+            {"selector": "tr:hover", "props": [("background-color", "yellow")]},
+            {
+                "selector": ".index_name",
+                "props": "font-style: italic; color: darkgrey; font-weight:normal;",
+            },
+            {
+                "selector": "th:not(.index_name)",
+                "props": "background-color: #000066; color: white;",
+            },
+            {"selector": "th.col_heading", "props": "text-align: center;"},
+            {
+                "selector": "th.col_heading.level0",
+                "props": 'font-family: "Times New Roman", Times, serif;'
+                "font-size: 1.2em;",
+            },
+            {
+                "selector": "td",
+                "props": 'font-family: "Times New Roman", Times, serif;'
+                "text-align: center; font-size: 1em; font-weight: normal;",
+            },
+            {"selector": "", "props": [("border", "1.5px solid black")]},
             {"selector": "tbody td", "props": [("border", "1px solid grey")]},
             {"selector": "th", "props": [("border", "1px solid grey")]},
         ]
     )
 
+    s.hide(axis="index")
     # Export the html file
     s.to_html("./plots/scores.html", index=False)
 
