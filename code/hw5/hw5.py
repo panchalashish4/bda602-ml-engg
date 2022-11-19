@@ -15,18 +15,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 
-# import numpy as np
-# from sklearn.model_selection import TimeSeriesSplit, train_test_split
-
-
-def print_heading(title):
-    """Prints Heading"""
-
-    print("\n" + "*" * 80)
-    print(title)
-    print("*" * 80 + "\n")
-    return
-
 
 def get_data() -> DataFrame:
     """Get data from mariadb"""
@@ -50,52 +38,8 @@ def get_data() -> DataFrame:
     return df
 
 
-def model_training(X_train, X_test, y_train, y_test):
-    """Calls model_training function for training models and return the stats"""
-
-    print_heading("Model Training")
-    # Create a dictionary with model names and classifiers
-    models = {
-        "decision_tree": {"model": DecisionTreeClassifier()},
-        "knn": {"model": KNeighborsClassifier()},
-        "svm": {"model": LinearSVC()},
-        "random_forest": {"model": RandomForestClassifier()},
-        "ada_boost": {"model": AdaBoostClassifier()},
-    }
-
-    # Look through all models and store all details in a list
-    scores = []
-
-    for model_name, model_clf in models.items():
-        # Fit Model on data
-        model = model_clf["model"]
-        model.fit(X_train, y_train)
-        # Predict the label using model
-        prediction = model.predict(X_test)
-        # Calculate accuracy of model
-        accuracy = accuracy_score(y_test, prediction)
-        # Calculate precision of model
-        precision = precision_score(prediction, y_test, average="micro")
-        # Calculate recall of model
-        recall = recall_score(prediction, y_test, average="micro")
-        stats = {
-            "model_name": model_name,
-            "accuracy": accuracy,
-            "precision": precision,
-            "recall": recall,
-        }
-        scores.append(stats)
-
-    # Use the list to create dataframe and return the results
-    model_scores = pd.DataFrame(scores)
-    print(model_scores)
-    return
-
-
 def model_pipeline(X_train, X_test, y_train, y_test):
     """Trains Classifiers using Pipeline"""
-
-    print_heading("Models via Pipeline Predictions")
 
     # Create a dictionary with model names and pipelines
     pipelines = {
@@ -115,6 +59,14 @@ def model_pipeline(X_train, X_test, y_train, y_test):
                 ],
             )
         },
+        "svm": {
+            "pipeline": Pipeline(
+                [
+                    ("StandardScaler", StandardScaler()),
+                    ("SVM", LinearSVC(dual=False, random_state=1234)),
+                ],
+            )
+        },
         "random_forest": {
             "pipeline": Pipeline(
                 [
@@ -123,63 +75,71 @@ def model_pipeline(X_train, X_test, y_train, y_test):
                 ],
             )
         },
+        "ada_boost": {
+            "pipeline": Pipeline(
+                [
+                    ("StandardScaler", StandardScaler()),
+                    ("AdaBoost", AdaBoostClassifier(random_state=1234)),
+                ],
+            )
+        },
     }
+
+    # Look through all models and store all details in a list
+    scores = []
 
     # Loop through all models and use pipelines to build models
     for model_name, model_pipe in pipelines.items():
-        print_heading(f"Pipeline for {model_name}")
         pipeline = model_pipe["pipeline"]
         # Fit on data using the pipeline
         pipeline.fit(X_train, y_train)
-        # Calculate probability and prediction for model using pipeline
-        probability = pipeline.predict_proba(X_test)
+        # probability = pipeline.predict_proba(X_test)
         prediction = pipeline.predict(X_test)
         score = accuracy_score(y_test, prediction)
-        print(f"Probability: {probability}")
-        print(f"Predictions: {prediction}")
-        print(f"Score: {score}")
+        precision = precision_score(prediction, y_test)
+        recall = recall_score(prediction, y_test)
+        stats = {
+            "model_name": model_name,
+            "accuracy": score,
+            "precision": precision,
+            "recall": recall,
+            "diff_precision_recall": abs(precision - recall),
+        }
+        scores.append(stats)
 
-    return
+    # Use the list to create dataframe and return the results
+    model_scores = pd.DataFrame(scores)
+
+    return model_scores
 
 
 def main():
     pd.options.display.max_columns = None
+
+    # Get data and sort by date
     df = get_data()
     df = df.sort_values(by="game_date")
 
+    # Take response and predictors
     response = df["Home_Team_Wins"]
     predictors = df.drop(["Home_Team_Wins", "game_date"], axis=1)
-    # predictors = df.drop("Home_Team_Wins", axis=1)
+
+    # Perform Response and Predictors Analysis
     resp_pred_analysis.do_analysis(df, predictors, response)
+    # Perform Brute Force Analysis
     brute_force_analysis.do_analysis(df, predictors.columns, response.name)
-    generate_output.just_do_it()
 
-    predictors["year"] = df["game_date"].dt.year
-    # new = predictors[predictors['year'] == 2012]
-    # 2927 for 2007
-    # 2922 for 2008
-    # 2991 for 2009
-    # 2914 for 2010
-    # 2952 for 2011
-    # 1178 for 2012
-    # Total = 15884
-    # print(((1178+2952)/15884)*100)
-    # print(df.shape)
-    # tscv = TimeSeriesSplit()
-    # for train_index, test_index in tscv.split(predictors):
-    #     print("TRAIN:", train_index, "TEST:", test_index)
-    #     X_train, X_test = predictors[train_index], predictors[test_index]
-    #     y_train, y_test = response[train_index], response[test_index]
-
-    # Using numpy, split
-    # train_set, test_set = np.split(df, [int(.80 * len(df))])
-
+    # Train and split data
     X_train, X_test, y_train, y_test = train_test_split(
         predictors, response, test_size=0.2, shuffle=False
     )
 
-    model_training(X_train, X_test, y_train, y_test)
-    model_pipeline(X_train, X_test, y_train, y_test)
+    # Train Models
+    models_stats = model_pipeline(X_train, X_test, y_train, y_test)
+    brute_force_analysis.generate_html(models_stats, "models_stats")
+
+    # Generate final output
+    generate_output.just_do_it()
 
 
 if __name__ == "__main__":
