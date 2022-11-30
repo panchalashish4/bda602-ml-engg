@@ -1,10 +1,13 @@
+mariadb
 numpy
 pandas
 plotly
+pretty_html_table
 pydataset
 pyspark
 pyspark-stubs
 seaborn
 statsmodels
+sqlalchemy
 scikit-learn
 sklearn
