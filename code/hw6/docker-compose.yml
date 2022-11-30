@@ -1,0 +1,23 @@
+version: "2.1"
+
+services:
+  mariadb:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: mariadb
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - MYSQL_ROOT_PASSWORD=password123
+      - TZ=America/Los_Angeles
+    volumes:
+      - ./db:/config
+    restart: unless-stopped
+
+  baseball:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: baseball
+    restart: unless-stopped
+    volumes:
+      - "./hw6:/app/hw6"
