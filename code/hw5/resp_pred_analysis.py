@@ -528,7 +528,7 @@ def do_analysis(df: DataFrame, predictors: DataFrame, response: Series):
 
     s.hide(axis="index")
     # Export the html file
-    s.to_html("./plots/scores.html", index=False)
+    s.to_html("scores.html", index=False)
 
     # # Open the html file
     # webbrowser.open("scores.html")

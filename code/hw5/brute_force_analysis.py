@@ -578,7 +578,7 @@ def cont_cont_calc(
         cont_cont_plot_df["Absolute Value of Correlation"],
     )
 
-    corr_url = save_plot(figure, "cont_cont_corr_matrix")
+    corr_url = save_plot(figure, "cont_cont_corr_matrix", True)
     mean_df = diff_mean_table(df, cont_cont, response_df, "cont_cont")
 
     return cont_cont_df, corr_url, mean_df
@@ -607,7 +607,7 @@ def catg_catg_calc(
         catg_catg_plot_df["Absolute Value of Correlation"],
     )
 
-    corr_url = save_plot(figure, "catg_catg_corr_matrix")
+    corr_url = save_plot(figure, "catg_catg_corr_matrix", True)
     mean_df = diff_mean_table(df, catg_catg, response_df, "catg_catg")
 
     return catg_catg_df, corr_url, mean_df
@@ -636,7 +636,7 @@ def catg_cont_calc(
             catg_cont_df["Absolute Value of Correlation"],
         )
 
-        corr_url = save_plot(figure, "catg_cont_corr_matrix")
+        corr_url = save_plot(figure, "catg_cont_corr_matrix", True)
         mean_df = diff_mean_table(df, catg_cont, response_df, "catg_cont")
 
         return catg_cont_df, corr_url, mean_df
@@ -682,7 +682,7 @@ def generate_html(s, title):
     )
 
     s.hide(axis="index")
-    s.to_html(f"./plots/{title}.html", index=False)
+    s.to_html(f"{title}.html", index=False)
 
     return
 

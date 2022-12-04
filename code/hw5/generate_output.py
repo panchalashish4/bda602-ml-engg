@@ -18,10 +18,10 @@ def print_heading(text_html: str, size: str, output_html: html):
 def check_file(file_path: str, var_type: str, output_html: html):
     """Check files and write it to html file"""
 
-    my_file = Path(f"./plots/{file_path}.html")
+    my_file = Path(f"{file_path}.html")
 
     if my_file.is_file():
-        with open(f"./plots/{file_path}.html", "r", encoding="utf-8") as f:
+        with open(f"{file_path}.html", "r", encoding="utf-8") as f:
             scores = f.read()
         print_heading(f"{var_type}", "h2", output_html)
         output_html.write("<body><center>%s</center></body>" % scores)
@@ -35,7 +35,7 @@ def check_file(file_path: str, var_type: str, output_html: html):
 def just_do_it():
     """creating a html file for output"""
 
-    output = open("./plots/baseball.html", "w")
+    output = open("baseball.html", "w")
     print_heading("Base Ball Data Statistics", "h1", output)
 
     # Write Response and Predictor Analysis file to final html
@@ -78,6 +78,6 @@ def just_do_it():
 
     output.close()
 
-    webbrowser.open("./plots/baseball.html")
+    webbrowser.open("baseball.html")
 
     return
