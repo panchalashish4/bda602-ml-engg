@@ -215,7 +215,7 @@ def save_plot(fig: Figure, name: str):
     path = "./plots/"
     Path(path).mkdir(parents=True, exist_ok=True)
     filepath = f"./plots/{name}.html"
-    fig.write_html(filepath)
+    fig.write_html(file=filepath, include_plotlyjs="cdn")
 
     return filepath
 
@@ -307,7 +307,6 @@ def difference_with_mean_of_response(response: Series, predictor: Series) -> int
     population_mean = response.mean()
 
     if check_predictors(predictor) == 1:
-
         predictor_bins = pd.cut(predictor, 10, duplicates="drop")
         predictor_table["LowerBin"] = pd.Series(
             [predictor_bin.left for predictor_bin in predictor_bins]
@@ -352,6 +351,8 @@ def difference_with_mean_of_response(response: Series, predictor: Series) -> int
     elif check_predictors(predictor) == 0:
         x_axis = difference_with_mean_table[predictor.name]
 
+    # print(difference_with_mean_table)
+
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     fig.add_trace(
@@ -389,11 +390,11 @@ def difference_with_mean_of_response(response: Series, predictor: Series) -> int
     fig.update_layout(title_text="<b>Bin Difference with Mean of Response vs Bin<b>")
 
     # Set x-axis title
-    fig.update_xaxes(title_text="<b>Predictor Bin<b>")
+    fig.update_xaxes(title_text=f"<b>Predictor Bin ({predictor.name})<b>")
 
     # Set y-axes titles
     fig.update_yaxes(title_text="<b>Population</b>", secondary_y=True)
-    fig.update_yaxes(title_text="<b>Response</b>", secondary_y=False)
+    fig.update_yaxes(title_text=f"<b>Response {response.name}</b>", secondary_y=False)
 
     # fig.show()
     url = save_plot(fig, title)

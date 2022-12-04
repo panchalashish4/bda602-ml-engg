@@ -45,6 +45,7 @@ def just_do_it():
     check_file(
         "cont_cont_corr_table", "Continuous/Continuous Pairs Correlation Table", output
     )
+
     check_file(
         "cont_cont_corr_matrix",
         "Continuous/Continuous Pairs Correlation Matrix",
@@ -75,6 +76,7 @@ def just_do_it():
         "h2",
         output,
     )
+    # output.write('<link rel="stylesheet" type="text/css" href="table_style.css">')
 
     output.close()
 

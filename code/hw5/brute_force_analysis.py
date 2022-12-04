@@ -159,7 +159,7 @@ def save_plot(fig: Figure, name: str, outside=False) -> str:
         filepath = f"./{name}.html"
     else:
         filepath = f"./plots/{name}.html"
-    fig.write_html(filepath)
+    fig.write_html(file=filepath, include_plotlyjs="cdn")
 
     return filepath
 
@@ -299,6 +299,7 @@ def correlation_matrix(x1, x2, score) -> Figure:
             zmin=0.0,
             zmax=1.0,
             type="heatmap",
+            colorscale="RdBu",
         ),
         layout={
             "title": f"{score.name}",
@@ -332,8 +333,9 @@ def brute_force_matrix(
             x=x1_bin,
             y=x2_bin,
             z=score,
-            zmid=0,
+            # zmid=0,
             type="heatmap",
+            colorscale="RdBu",
         ),
         layout={
             "title": title,
