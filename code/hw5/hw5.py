@@ -119,6 +119,7 @@ def main():
     # Get data and sort by date
     df = get_data()
     df = df.sort_values(by="game_date")
+    df = df.reset_index(drop=True)
 
     # Take response and predictors
     response = df["Home_Team_Wins"]
