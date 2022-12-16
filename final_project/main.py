@@ -37,7 +37,7 @@ def get_data() -> DataFrame:
 
     db_user = "root"
     db_pass = "password123"  # pragma: allowlist secret
-    db_host = "mariadb4:3306"
+    db_host = "mariadb5:3306"
     db_database = "baseball"
     connect_string = (
         f"mariadb+mariadbconnector://{db_user}:{db_pass}@{db_host}/{db_database}"
