@@ -27,6 +27,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
+from sqlalchemy import text
 from user_functions import generate_html, save_plot
 
 warnings.filterwarnings("ignore")
@@ -44,12 +45,12 @@ def get_data() -> DataFrame:
     )
     sql_engine = sqlalchemy.create_engine(connect_string)
 
-    query = """
-        SELECT * FROM pitchers_diff_calc
-    """
+    query = """SELECT * FROM pitchers_diff_calc"""
+    with sql_engine.begin() as connection:
+        df = pd.read_sql_query(text(query), connection)
+        df = df.fillna(df.median())
 
-    df = pd.read_sql_query(query, sql_engine)
-    df = df.fillna(df.median())
+    print("Database Connection Successful")
 
     return df
 
