@@ -1,9 +1,9 @@
 version: "2.1"
 
 services:
-  mariadb3:
+  mariadb_ap:
     image: lscr.io/linuxserver/mariadb:latest
-    container_name: mariadb3
+    container_name: mariadb_ap
     environment:
       - PUID=1000
       - PGID=1000
@@ -21,4 +21,4 @@ services:
     image: baseball
     volumes:
       - "./output:/app/files"
-    command: ["/bin/bash", "hw6.sh"]
+    command: ["/bin/bash", "docker_script.sh"]
