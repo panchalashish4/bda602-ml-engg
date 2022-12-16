@@ -240,5 +240,3 @@ def generate_html(s: DataFrame, click_dict: dict, title: str):
     s.to_html(f"./files/{title}.html", index=False)
 
     return
-
-

@@ -1,9 +1,9 @@
 version: "2.1"
 
 services:
-  mariadb_ap:
+  mariadb5:
     image: lscr.io/linuxserver/mariadb:latest
-    container_name: mariadb_ap
+    container_name: mariadb5
     environment:
       - PUID=1000
       - PGID=1000
