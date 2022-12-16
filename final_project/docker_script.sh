@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sleep 30
+sleep 60
 
 if mariadb -u root -ppassword123 -h mariadb_ap -e "USE baseball;"
 then
