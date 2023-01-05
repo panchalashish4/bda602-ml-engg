@@ -1,3 +1,4 @@
+jinja2
 mariadb
 numpy
 pandas
@@ -8,6 +9,6 @@ pyspark
 pyspark-stubs
 seaborn
 statsmodels
-sqlalchemy
+sqlalchemy==2.0.0b4
 scikit-learn
 sklearn
